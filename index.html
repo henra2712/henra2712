@@ -54,11 +54,22 @@
         }
         .code-box {
             max-height: 0;
-            overflow: hidden;
+            overflow-x: auto;
+            overflow-y: hidden;
             transition: max-height 0.4s ease;
             background: #f4f4f4;
             padding: 0 15px;
             border-radius: 8px;
+        }
+
+        .code-box pre {
+            white-space: pre;
+            overflow-x: auto;
+            margin: 0;
+        }
+
+        .code-box {
+            -webkit-overflow-scrolling: touch;
         }
         
         .toggle-btn {
