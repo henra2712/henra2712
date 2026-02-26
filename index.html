@@ -53,12 +53,12 @@
             background: #023e8a;
         }
         .code-box {
-            display: none;
-            margin-top: 15px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease;
             background: #f4f4f4;
-            padding: 15px;
+            padding: 0 15px;
             border-radius: 8px;
-            overflow-x: auto;
         }
         
         .toggle-btn {
@@ -122,19 +122,256 @@
         <div id="code1" class="code-box">
             <pre>
                 <code class="language-python">
-                class PortalAttendance(CustomerPortal):
+                from odoo import models, fields, api, _
+                from odoo.exceptions import ValidationError, UserError
                 
-                    @http.route(['/my/attendance'], type='http', auth="user", website=True)
-                    def portal_my_attendance(self):
-                        employee = request.env.user.employee_id
+                from datetime import datetime, date
                 
-                        attendances = request.env['hr.attendance'].search([
-                            ('employee_id', '=', employee.id)
-                        ])
+                import logging
+                _logger = logging.getLogger(__name__)
                 
-                        return request.render("module.portal_my_attendance", {
-                            'attendances': attendances
-                        })
+                class sale_order(models.Model):
+                    _inherit = 'sale.order'
+                
+                    # New Field 
+                    margin_imple = fields.Monetary("Margin Implementation", compute='_compute_business_revenue_margin', store=True, tracking=True)
+                    margin_imple_percent = fields.Float("Margin Implementation (%)", compute='_compute_business_revenue_margin', store=True, aggregator="avg", tracking=True)
+                
+                    margin_license = fields.Monetary("Margin License", compute='_compute_business_revenue_margin', store=True, tracking=True)
+                    margin_license_percent = fields.Float("Margin License (%)", compute='_compute_business_revenue_margin', store=True, aggregator="avg", tracking=True)
+                
+                    margin_maintenance = fields.Monetary("Margin Maintenance", compute='_compute_business_revenue_margin', store=True, tracking=True)
+                    margin_maintenance_percent = fields.Float("Margin Maintenance (%)", compute='_compute_business_revenue_margin', store=True, aggregator="avg", tracking=True)
+                
+                    order_line_cost = fields.One2many('sale.order.line.cost', 'order_id', string="Order Lines Cost", copy=True, auto_join=True, tracking=True, store=False)
+                    cost_amount = fields.Monetary(string="Cost Total", compute='_compute_cost_amount', tracking=True)
+                    order_line_expense = fields.One2many('sale.order.line.expense', 'order_id', string="Order Lines Expense", copy=False, auto_join=True, tracking=True)
+                
+                    client_order_ref = fields.Char(string='No. PO Customer', copy=False, tracking=True)
+                    project_name = fields.Char(string='Project Name', tracking=True, required=True)
+                    partner_child_id = fields.Many2one('res.partner', string='End Customer', copy=False, tracking=True)
+                    project_code = fields.Char(string='Project Code', tracking=True, required=True)
+                
+                    # New Compute Function
+                    @api.depends('order_line.margin', 'amount_untaxed')
+                    def _compute_business_revenue_margin(self):
+                        for order in self:
+                            # LICENSE
+                            order.margin_license = sum(order.order_line.filtered(lambda x: x.business_revenue == 'license').mapped('margin'))
+                            untaxed = sum(order.order_line.filtered(lambda x: x.business_revenue == 'license').mapped("price_subtotal"))
+                            order.margin_license_percent = untaxed and order.margin_license/untaxed
+                        
+                            # IMPLEMENTATION
+                            order.margin_imple = sum(order.order_line.filtered(lambda x: x.business_revenue == 'implementation').mapped('margin'))
+                            untaxed = sum(order.order_line.filtered(lambda x: x.business_revenue == 'implementation').mapped("price_subtotal"))
+                            order.margin_imple_percent = untaxed and order.margin_imple/untaxed
+                        
+                            # MAINTENANCE
+                            order.margin_maintenance = sum(order.order_line.filtered(lambda x: x.business_revenue == 'maintenance').mapped('margin'))
+                            untaxed = sum(order.order_line.filtered(lambda x: x.business_revenue == 'maintenance').mapped("price_subtotal"))
+                            order.margin_maintenance_percent = untaxed and order.margin_maintenance/untaxed
+                
+                    @api.depends('order_line.margin', 'amount_untaxed', 'cost_amount')
+                    def _compute_margin(self):
+                        if not all(self._ids):
+                            for order in self:
+                                order.margin = order.amount_untaxed - order.cost_amount # originalnya -> sum(order.order_line.mapped('margin'))
+                                order.margin_percent = order.amount_untaxed and order.margin/order.amount_untaxed
+                        else:
+                            grouped_order_lines_data = self.env['sale.order.line']._read_group(
+                                [
+                                    ('order_id', 'in', self.ids),
+                                ], ['order_id'], ['margin:sum'])
+                            mapped_data = {order.id: margin for order, margin in grouped_order_lines_data}
+                            for order in self:
+                                order.margin = order.amount_untaxed - order.cost_amount # originalnya -> mapped_data.get(order.id, 0.0)
+                                order.margin_percent = order.amount_untaxed and order.margin/order.amount_untaxed
+                
+                    @api.depends('order_line_expense')
+                    def _compute_cost_amount(self):
+                        for rec in self:
+                            rec.cost_amount = sum(rec.order_line_expense.mapped('total'))
+                    
+                    def _create_invoices(self, grouped=False, final=False, date=None):
+                        moves = super(sale_order, self)._create_invoices(grouped=grouped, final=final, date=date)
+                        for move in moves:
+                            move.partner_child_id = self.partner_child_id.id
+                            move.project_id = self.project_id.id
+                        return moves
+                    
+                    @api.model
+                    def create(self, vals):
+                        result = super(sale_order, self).create(vals)
+                        return result
+                    
+                    def write(self, values):
+                        res = super(sale_order, self).write(values)
+                        return res
+                
+                    def create_budget_project(self):
+                        project_analytic = self.env['account.analytic.account'].sudo().search([('project_ids','in',self.project_ids.ids)])
+                        for project in project_analytic:
+                            for sale_cost in self.order_line_expense:
+                                budget_line = []
+                                budget_line.append([0,0,{
+                                    'account_id': project.id,
+                                    'budget_amount': sale_cost.cost_total
+                                }])
+                            
+                                cost_categ = sale_cost.cost_category.capitalize() if sale_cost.cost_category else ''
+                                budget_project = self.env['budget.analytic'].sudo().create({
+                                    'name': f"Budget Project: {self.project_name}-{self.name}-{sale_cost.name}-{cost_categ}", # 'Budget {}'.format(self.name),
+                                    'user_id': self.user_id.id,
+                                    'budget_type': 'expense',
+                                    'date_from': datetime.now(),
+                                    'date_to': datetime.now(),
+                                    'order_id': self.id,
+                                    'order_line_id': sale_cost.order_line_id.id,
+                                    'order_line_exp_id': sale_cost.id,
+                                    'budget_line_ids': budget_line,
+                                    'cost_category': sale_cost.cost_category,
+                                })
+                                    
+                                if budget_project:
+                                    budget_project.sudo().action_budget_confirm()
+                                    sale_cost.order_id.message_post(body=_("Budget Analytic {} created.").format(budget_project.name))   
+                
+                    def unlink_budget_project(self):
+                        budget_project = self.env['budget.analytic'].sudo().search([('order_id','=',self.id)])
+                        if budget_project:
+                            budget_project.sudo().action_budget_draft()
+                            budget_project.unlink()
+                
+                    def _action_confirm(self):
+                        res = super()._action_confirm()
+                        for rec in self:
+                            rec.create_milestone_from_payment_term() # Thats it for create milestone from payment term
+                            if rec.cost_amount != 0:
+                                rec.create_budget_project()
+                        return res
+                    
+                    def action_draft(self):
+                        res = super().action_draft()
+                        for rec in self:
+                            rec.unlink_budget_project()
+                        return res
+                    
+                    # New function for create milestone from payment term
+                    def create_milestone_from_payment_term(self):
+                        for order in self.filtered(lambda x: x.project_id):
+                            for line in order.payment_term_id.line_milestone_ids:
+                                milestone = self.env['project.milestone'].create({
+                                    'name': "({}) {} - {} ".format(order.project_code, order.project_name, line.name),
+                                    'project_id': order.project_id.id,
+                                    # 'sale_line_id': self.id,
+                                    'sale_id': order.id,
+                                    'quantity_percentage': line.quantity_percentage,
+                                    'is_top': True,
+                                })
+                                _logger.info(f'Success Create Milestone from Payment Term: {milestone.name} | Quantity Percentage: {line.quantity_percentage}')
+                    
+                    # Inherit function and modify domain
+                    def action_view_milestone(self):
+                        res = super(sale_order, self).action_view_milestone()
+                        res['domain'] = [('sale_id', 'in', self.ids)]
+                        return res
+                    
+                    # overider function for recount milestone created from payment term
+                    def _compute_milestone_count(self):
+                        read_group = self.env['project.milestone']._read_group(
+                            [('sale_id', 'in', self.ids)],
+                            ['sale_id'],
+                            ['__count'],
+                        )
+                        line_data = {sale.id: count for sale, count in read_group}
+                        for order in self:
+                            order.milestone_count = line_data.get(self.id, 0)
+                
+                    def update_invoice_milestone(self, move_id, quantity_percentage):
+                        if move_id:
+                            for inv_line in move_id.invoice_line_ids:
+                                inv_sale_line_ids = inv_line.sale_line_ids
+                                if len(inv_sale_line_ids) > 1:
+                                    qty_before = inv_sale_line_ids[0].product_uom_qty
+                                else:
+                                    qty_before = inv_sale_line_ids.product_uom_qty
+                                inv_line.quantity = quantity_percentage * qty_before
+                
+                                _logger.info(f'Invoice Line before: {qty_before} | after: {inv_line.quantity} | Quantity Percentage: {quantity_percentage}')
+                </code>
+
+                <code class="language-markup">
+                    &lt;record model="ir.ui.view" id="sale_margin_sale_order_inherit"&gt;
+                        &lt;field name="name"&gt;sale.order.margin.view.form&lt;/field&gt;
+                        &lt;field name="model"&gt;sale.order&lt;/field&gt;
+                        &lt;field name="inherit_id" ref="sale_margin.sale_margin_sale_order"/&gt;
+                        &lt;field name="arch" type="xml"&gt;
+                
+                            &lt;xpath expr="//div[@class='d-flex float-end']" position="replace"&gt;
+                                &lt;div class="d-flex float-end" colspan="2" groups="base.group_user" invisible="margin_license == 0"&gt;
+                                    &lt;label for="margin_license"/&gt;
+                                    &lt;div&gt;
+                                        &lt;field name="margin_license" class="oe_inline"/&gt;
+                                        &lt;field name="amount_untaxed" invisible="1"/&gt;
+                                        &lt;span class="oe_inline" invisible="amount_untaxed == 0"&gt;
+                                            (&lt;field name="margin_license_percent" nolabel="1" class="oe_inline" widget="percentage" /&gt;)
+                                        &lt;/span&gt;
+                                    &lt;/div&gt;
+                                &lt;/div&gt;
+                                &lt;div class="d-flex float-end" colspan="2" groups="base.group_user" invisible="margin_imple == 0"&gt;
+                                    &lt;label for="margin_imple"/&gt;
+                                    &lt;div&gt;
+                                        &lt;field name="margin_imple" class="oe_inline"/&gt;
+                                        &lt;field name="amount_untaxed" invisible="1"/&gt;
+                                        &lt;span class="oe_inline" invisible="amount_untaxed == 0"&gt;
+                                            (&lt;field name="margin_imple_percent" nolabel="1" class="oe_inline" widget="percentage"/&gt;)
+                                        &lt;/span&gt;
+                                    &lt;/div&gt;
+                                &lt;/div&gt;
+                                &lt;div class="d-flex float-end" colspan="2" groups="base.group_user" invisible="margin_maintenance == 0"&gt;
+                                    &lt;label for="margin_maintenance"/&gt;
+                                    &lt;div&gt;
+                                        &lt;field name="margin_maintenance" class="oe_inline"/&gt;
+                                        &lt;field name="amount_untaxed" invisible="1"/&gt;
+                                        &lt;span class="oe_inline" invisible="amount_untaxed == 0"&gt;
+                                            (&lt;field name="margin_maintenance_percent" nolabel="1" class="oe_inline" widget="percentage"/&gt;)
+                                        &lt;/span&gt;
+                                    &lt;/div&gt;
+                                &lt;/div&gt;
+                                &lt;div class="d-flex float-end" colspan="2" groups="base.group_user" invisible="cost_amount == 0"&gt;
+                                    &lt;label for="cost_amount" string="Total Cost"/&gt;
+                                    &lt;div&gt;
+                                        &lt;field name="cost_amount" class="oe_inline"/&gt;
+                                    &lt;/div&gt;
+                                &lt;/div&gt;
+                                &lt;div class="d-flex float-end" colspan="2" groups="base.group_user"&gt;
+                                    &lt;label for="margin" string="Total Margin"/&gt;
+                                    &lt;div&gt;
+                                        &lt;field name="margin" class="oe_inline"/&gt;
+                                        &lt;field name="amount_untaxed" invisible="1"/&gt;
+                                        &lt;span class="oe_inline" invisible="amount_untaxed == 0"&gt;
+                                            (&lt;field name="margin_percent" nolabel="1" class="oe_inline" widget="percentage"/&gt;)
+                                        &lt;/span&gt;
+                                    &lt;/div&gt;
+                                &lt;/div&gt;
+                            &lt;/xpath&gt;
+                        &lt;/field&gt;
+                    &lt;/record&gt;
+                
+                    &lt;record id="sale_margin_sale_order_line_form_inherit" model="ir.ui.view"&gt;
+                        &lt;field name="name"&gt;sale_margin_sale_order_line_form_inherit&lt;/field&gt;
+                        &lt;field name="model"&gt;sale.order&lt;/field&gt;
+                        &lt;field name="inherit_id" ref="sale_margin.sale_margin_sale_order_line_form"/&gt;
+                        &lt;field name="arch" type="xml"&gt;
+                            &lt;xpath expr="//field[@name='order_line']/list//field[@name='purchase_price']" position="attributes"&gt;
+                                &lt;attribute name="optional"&gt;show&lt;/attribute&gt;
+                            &lt;/xpath&gt;
+                            &lt;xpath expr="//field[@name='order_line']/list//field[@name='product_uom_qty']" position="before"&gt;
+                                &lt;field name="name_description"/&gt;
+                                &lt;field name="business_revenue"/&gt;
+                            &lt;/xpath&gt;
+                        &lt;/field&gt;
+                    &lt;/record&gt;
                 </code>
             </pre>
         </div>
@@ -186,10 +423,12 @@
 <script>
 function toggleCode(id) {
     var el = document.getElementById(id);
-    if (el.style.display === "none") {
-        el.style.display = "block";
+    if (el.style.maxHeight) {
+        el.style.maxHeight = null;
+        el.style.padding = "0 15px";
     } else {
-        el.style.display = "none";
+        el.style.maxHeight = el.scrollHeight + "px";
+        el.style.padding = "15px";
     }
 }
 </script>
