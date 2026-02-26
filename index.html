@@ -116,191 +116,136 @@
             <li>Pengembangan Portal Controller</li>
         </ul>
         <button class="button toggle-btn" onclick="toggleCode('code1')">
-            Lihat Highlight Python
+            Lihat Python
         </button>
         <button class="button toggle-btn" onclick="toggleCode('code2')">
-            Lihat Highlight Xml
+            Lihat Xml
         </button>
     
         <div id="code1" class="code-box">
             <pre>
                 <code class="language-python">
-                from odoo import models, fields, api, _
-                from odoo.exceptions import ValidationError, UserError
-                
-                from datetime import datetime, date
-                
-                import logging
-                _logger = logging.getLogger(__name__)
-                
-                class sale_order(models.Model):
-                    _inherit = 'sale.order'
-                
-                    # New Field 
-                    margin_imple = fields.Monetary("Margin Implementation", compute='_compute_business_revenue_margin', store=True, tracking=True)
-                    margin_imple_percent = fields.Float("Margin Implementation (%)", compute='_compute_business_revenue_margin', store=True, aggregator="avg", tracking=True)
-                
-                    margin_license = fields.Monetary("Margin License", compute='_compute_business_revenue_margin', store=True, tracking=True)
-                    margin_license_percent = fields.Float("Margin License (%)", compute='_compute_business_revenue_margin', store=True, aggregator="avg", tracking=True)
-                
-                    margin_maintenance = fields.Monetary("Margin Maintenance", compute='_compute_business_revenue_margin', store=True, tracking=True)
-                    margin_maintenance_percent = fields.Float("Margin Maintenance (%)", compute='_compute_business_revenue_margin', store=True, aggregator="avg", tracking=True)
-                
-                    order_line_cost = fields.One2many('sale.order.line.cost', 'order_id', string="Order Lines Cost", copy=True, auto_join=True, tracking=True, store=False)
-                    cost_amount = fields.Monetary(string="Cost Total", compute='_compute_cost_amount', tracking=True)
-                    order_line_expense = fields.One2many('sale.order.line.expense', 'order_id', string="Order Lines Expense", copy=False, auto_join=True, tracking=True)
-                
-                    client_order_ref = fields.Char(string='No. PO Customer', copy=False, tracking=True)
-                    project_name = fields.Char(string='Project Name', tracking=True, required=True)
-                    partner_child_id = fields.Many2one('res.partner', string='End Customer', copy=False, tracking=True)
-                    project_code = fields.Char(string='Project Code', tracking=True, required=True)
-                
-                    # New Compute Function
-                    @api.depends('order_line.margin', 'amount_untaxed')
-                    def _compute_business_revenue_margin(self):
-                        for order in self:
-                            # LICENSE
-                            order.margin_license = sum(order.order_line.filtered(lambda x: x.business_revenue == 'license').mapped('margin'))
-                            untaxed = sum(order.order_line.filtered(lambda x: x.business_revenue == 'license').mapped("price_subtotal"))
-                            order.margin_license_percent = untaxed and order.margin_license/untaxed
-                        
-                            # IMPLEMENTATION
-                            order.margin_imple = sum(order.order_line.filtered(lambda x: x.business_revenue == 'implementation').mapped('margin'))
-                            untaxed = sum(order.order_line.filtered(lambda x: x.business_revenue == 'implementation').mapped("price_subtotal"))
-                            order.margin_imple_percent = untaxed and order.margin_imple/untaxed
-                        
-                            # MAINTENANCE
-                            order.margin_maintenance = sum(order.order_line.filtered(lambda x: x.business_revenue == 'maintenance').mapped('margin'))
-                            untaxed = sum(order.order_line.filtered(lambda x: x.business_revenue == 'maintenance').mapped("price_subtotal"))
-                            order.margin_maintenance_percent = untaxed and order.margin_maintenance/untaxed
-                
-                    @api.depends('order_line.margin', 'amount_untaxed', 'cost_amount')
-                    def _compute_margin(self):
-                        if not all(self._ids):
-                            for order in self:
-                                order.margin = order.amount_untaxed - order.cost_amount # originalnya -> sum(order.order_line.mapped('margin'))
-                                order.margin_percent = order.amount_untaxed and order.margin/order.amount_untaxed
-                        else:
-                            grouped_order_lines_data = self.env['sale.order.line']._read_group(
-                                [
-                                    ('order_id', 'in', self.ids),
-                                ], ['order_id'], ['margin:sum'])
-                            mapped_data = {order.id: margin for order, margin in grouped_order_lines_data}
-                            for order in self:
-                                order.margin = order.amount_untaxed - order.cost_amount # originalnya -> mapped_data.get(order.id, 0.0)
-                                order.margin_percent = order.amount_untaxed and order.margin/order.amount_untaxed
-                
-                    @api.depends('order_line_expense')
-                    def _compute_cost_amount(self):
-                        for rec in self:
-                            rec.cost_amount = sum(rec.order_line_expense.mapped('total'))
+class sale_order(models.Model):
+    _inherit = 'sale.order'
+
+    # New Field 
+    margin_imple = fields.Monetary("Margin Implementation", compute='_compute_business_revenue_margin', store=True, tracking=True)
+    margin_imple_percent = fields.Float("Margin Implementation (%)", compute='_compute_business_revenue_margin', store=True, aggregator="avg", tracking=True)
+
+    margin_license = fields.Monetary("Margin License", compute='_compute_business_revenue_margin', store=True, tracking=True)
+    margin_license_percent = fields.Float("Margin License (%)", compute='_compute_business_revenue_margin', store=True, aggregator="avg", tracking=True)
+
+    margin_maintenance = fields.Monetary("Margin Maintenance", compute='_compute_business_revenue_margin', store=True, tracking=True)
+    margin_maintenance_percent = fields.Float("Margin Maintenance (%)", compute='_compute_business_revenue_margin', store=True, aggregator="avg", tracking=True)
+
+    order_line_cost = fields.One2many('sale.order.line.cost', 'order_id', string="Order Lines Cost", copy=True, auto_join=True, tracking=True, store=False)
+    cost_amount = fields.Monetary(string="Cost Total", compute='_compute_cost_amount', tracking=True)
+    order_line_expense = fields.One2many('sale.order.line.expense', 'order_id', string="Order Lines Expense", copy=False, auto_join=True, tracking=True)
+
+    client_order_ref = fields.Char(string='No. PO Customer', copy=False, tracking=True)
+    project_name = fields.Char(string='Project Name', tracking=True, required=True)
+    partner_child_id = fields.Many2one('res.partner', string='End Customer', copy=False, tracking=True)
+    project_code = fields.Char(string='Project Code', tracking=True, required=True)
+
+    # New Compute Function
+    @api.depends('order_line.margin', 'amount_untaxed')
+    def _compute_business_revenue_margin(self):
+        for order in self:
+            # LICENSE
+            order.margin_license = sum(order.order_line.filtered(lambda x: x.business_revenue == 'license').mapped('margin'))
+            untaxed = sum(order.order_line.filtered(lambda x: x.business_revenue == 'license').mapped("price_subtotal"))
+            order.margin_license_percent = untaxed and order.margin_license/untaxed
+        
+            # IMPLEMENTATION
+            order.margin_imple = sum(order.order_line.filtered(lambda x: x.business_revenue == 'implementation').mapped('margin'))
+            untaxed = sum(order.order_line.filtered(lambda x: x.business_revenue == 'implementation').mapped("price_subtotal"))
+            order.margin_imple_percent = untaxed and order.margin_imple/untaxed
+        
+            # MAINTENANCE
+            order.margin_maintenance = sum(order.order_line.filtered(lambda x: x.business_revenue == 'maintenance').mapped('margin'))
+            untaxed = sum(order.order_line.filtered(lambda x: x.business_revenue == 'maintenance').mapped("price_subtotal"))
+            order.margin_maintenance_percent = untaxed and order.margin_maintenance/untaxed
+
+    @api.depends('order_line.margin', 'amount_untaxed', 'cost_amount')
+    def _compute_margin(self):
+        if not all(self._ids):
+            for order in self:
+                order.margin = order.amount_untaxed - order.cost_amount # originalnya -> sum(order.order_line.mapped('margin'))
+                order.margin_percent = order.amount_untaxed and order.margin/order.amount_untaxed
+        else:
+            grouped_order_lines_data = self.env['sale.order.line']._read_group(
+                [
+                    ('order_id', 'in', self.ids),
+                ], ['order_id'], ['margin:sum'])
+            mapped_data = {order.id: margin for order, margin in grouped_order_lines_data}
+            for order in self:
+                order.margin = order.amount_untaxed - order.cost_amount # originalnya -> mapped_data.get(order.id, 0.0)
+                order.margin_percent = order.amount_untaxed and order.margin/order.amount_untaxed
+
+    def create_budget_project(self):
+        project_analytic = self.env['account.analytic.account'].sudo().search([('project_ids','in',self.project_ids.ids)])
+        for project in project_analytic:
+            for sale_cost in self.order_line_expense:
+                budget_line = []
+                budget_line.append([0,0,{
+                    'account_id': project.id,
+                    'budget_amount': sale_cost.cost_total
+                }])
+            
+                cost_categ = sale_cost.cost_category.capitalize() if sale_cost.cost_category else ''
+                budget_project = self.env['budget.analytic'].sudo().create({
+                    'name': f"Budget Project: {self.project_name}-{self.name}-{sale_cost.name}-{cost_categ}", # 'Budget {}'.format(self.name),
+                    'user_id': self.user_id.id,
+                    'budget_type': 'expense',
+                    'date_from': datetime.now(),
+                    'date_to': datetime.now(),
+                    'order_id': self.id,
+                    'order_line_id': sale_cost.order_line_id.id,
+                    'order_line_exp_id': sale_cost.id,
+                    'budget_line_ids': budget_line,
+                    'cost_category': sale_cost.cost_category,
+                })
                     
-                    def _create_invoices(self, grouped=False, final=False, date=None):
-                        moves = super(sale_order, self)._create_invoices(grouped=grouped, final=final, date=date)
-                        for move in moves:
-                            move.partner_child_id = self.partner_child_id.id
-                            move.project_id = self.project_id.id
-                        return moves
-                    
-                    @api.model
-                    def create(self, vals):
-                        result = super(sale_order, self).create(vals)
-                        return result
-                    
-                    def write(self, values):
-                        res = super(sale_order, self).write(values)
-                        return res
-                
-                    def create_budget_project(self):
-                        project_analytic = self.env['account.analytic.account'].sudo().search([('project_ids','in',self.project_ids.ids)])
-                        for project in project_analytic:
-                            for sale_cost in self.order_line_expense:
-                                budget_line = []
-                                budget_line.append([0,0,{
-                                    'account_id': project.id,
-                                    'budget_amount': sale_cost.cost_total
-                                }])
-                            
-                                cost_categ = sale_cost.cost_category.capitalize() if sale_cost.cost_category else ''
-                                budget_project = self.env['budget.analytic'].sudo().create({
-                                    'name': f"Budget Project: {self.project_name}-{self.name}-{sale_cost.name}-{cost_categ}", # 'Budget {}'.format(self.name),
-                                    'user_id': self.user_id.id,
-                                    'budget_type': 'expense',
-                                    'date_from': datetime.now(),
-                                    'date_to': datetime.now(),
-                                    'order_id': self.id,
-                                    'order_line_id': sale_cost.order_line_id.id,
-                                    'order_line_exp_id': sale_cost.id,
-                                    'budget_line_ids': budget_line,
-                                    'cost_category': sale_cost.cost_category,
-                                })
-                                    
-                                if budget_project:
-                                    budget_project.sudo().action_budget_confirm()
-                                    sale_cost.order_id.message_post(body=_("Budget Analytic {} created.").format(budget_project.name))   
-                
-                    def unlink_budget_project(self):
-                        budget_project = self.env['budget.analytic'].sudo().search([('order_id','=',self.id)])
-                        if budget_project:
-                            budget_project.sudo().action_budget_draft()
-                            budget_project.unlink()
-                
-                    def _action_confirm(self):
-                        res = super()._action_confirm()
-                        for rec in self:
-                            rec.create_milestone_from_payment_term() # Thats it for create milestone from payment term
-                            if rec.cost_amount != 0:
-                                rec.create_budget_project()
-                        return res
-                    
-                    def action_draft(self):
-                        res = super().action_draft()
-                        for rec in self:
-                            rec.unlink_budget_project()
-                        return res
-                    
-                    # New function for create milestone from payment term
-                    def create_milestone_from_payment_term(self):
-                        for order in self.filtered(lambda x: x.project_id):
-                            for line in order.payment_term_id.line_milestone_ids:
-                                milestone = self.env['project.milestone'].create({
-                                    'name': "({}) {} - {} ".format(order.project_code, order.project_name, line.name),
-                                    'project_id': order.project_id.id,
-                                    # 'sale_line_id': self.id,
-                                    'sale_id': order.id,
-                                    'quantity_percentage': line.quantity_percentage,
-                                    'is_top': True,
-                                })
-                                _logger.info(f'Success Create Milestone from Payment Term: {milestone.name} | Quantity Percentage: {line.quantity_percentage}')
-                    
-                    # Inherit function and modify domain
-                    def action_view_milestone(self):
-                        res = super(sale_order, self).action_view_milestone()
-                        res['domain'] = [('sale_id', 'in', self.ids)]
-                        return res
-                    
-                    # overider function for recount milestone created from payment term
-                    def _compute_milestone_count(self):
-                        read_group = self.env['project.milestone']._read_group(
-                            [('sale_id', 'in', self.ids)],
-                            ['sale_id'],
-                            ['__count'],
-                        )
-                        line_data = {sale.id: count for sale, count in read_group}
-                        for order in self:
-                            order.milestone_count = line_data.get(self.id, 0)
-                
-                    def update_invoice_milestone(self, move_id, quantity_percentage):
-                        if move_id:
-                            for inv_line in move_id.invoice_line_ids:
-                                inv_sale_line_ids = inv_line.sale_line_ids
-                                if len(inv_sale_line_ids) > 1:
-                                    qty_before = inv_sale_line_ids[0].product_uom_qty
-                                else:
-                                    qty_before = inv_sale_line_ids.product_uom_qty
-                                inv_line.quantity = quantity_percentage * qty_before
-                
-                                _logger.info(f'Invoice Line before: {qty_before} | after: {inv_line.quantity} | Quantity Percentage: {quantity_percentage}')
+                if budget_project:
+                    budget_project.sudo().action_budget_confirm()
+                    sale_cost.order_id.message_post(body=_("Budget Analytic {} created.").format(budget_project.name))   
+    
+    # New function for create milestone from payment term
+    def create_milestone_from_payment_term(self):
+        for order in self.filtered(lambda x: x.project_id):
+            for line in order.payment_term_id.line_milestone_ids:
+                milestone = self.env['project.milestone'].create({
+                    'name': "({}) {} - {} ".format(order.project_code, order.project_name, line.name),
+                    'project_id': order.project_id.id,
+                    # 'sale_line_id': self.id,
+                    'sale_id': order.id,
+                    'quantity_percentage': line.quantity_percentage,
+                    'is_top': True,
+                })
+                _logger.info(f'Success Create Milestone from Payment Term: {milestone.name} | Quantity Percentage: {line.quantity_percentage}')
+    
+    # overider function for recount milestone created from payment term
+    def _compute_milestone_count(self):
+        read_group = self.env['project.milestone']._read_group(
+            [('sale_id', 'in', self.ids)],
+            ['sale_id'],
+            ['__count'],
+        )
+        line_data = {sale.id: count for sale, count in read_group}
+        for order in self:
+            order.milestone_count = line_data.get(self.id, 0)
+
+    def update_invoice_milestone(self, move_id, quantity_percentage):
+        if move_id:
+            for inv_line in move_id.invoice_line_ids:
+                inv_sale_line_ids = inv_line.sale_line_ids
+                if len(inv_sale_line_ids) > 1:
+                    qty_before = inv_sale_line_ids[0].product_uom_qty
+                else:
+                    qty_before = inv_sale_line_ids.product_uom_qty
+                inv_line.quantity = quantity_percentage * qty_before
+
+                _logger.info(f'Invoice Line before: {qty_before} | after: {inv_line.quantity} | Quantity Percentage: {quantity_percentage}')
                 </code>
             </pre>
         </div>
@@ -308,77 +253,77 @@
         <div id="code2" class="code-box">
             <pre>
                 <code class="language-markup">
-                    &lt;record model="ir.ui.view" id="sale_margin_sale_order_inherit"&gt;
-                        &lt;field name="name"&gt;sale.order.margin.view.form&lt;/field&gt;
-                        &lt;field name="model"&gt;sale.order&lt;/field&gt;
-                        &lt;field name="inherit_id" ref="sale_margin.sale_margin_sale_order"/&gt;
-                        &lt;field name="arch" type="xml"&gt;
-                
-                            &lt;xpath expr="//div[@class='d-flex float-end']" position="replace"&gt;
-                                &lt;div class="d-flex float-end" colspan="2" groups="base.group_user" invisible="margin_license == 0"&gt;
-                                    &lt;label for="margin_license"/&gt;
-                                    &lt;div&gt;
-                                        &lt;field name="margin_license" class="oe_inline"/&gt;
-                                        &lt;field name="amount_untaxed" invisible="1"/&gt;
-                                        &lt;span class="oe_inline" invisible="amount_untaxed == 0"&gt;
-                                            (&lt;field name="margin_license_percent" nolabel="1" class="oe_inline" widget="percentage" /&gt;)
-                                        &lt;/span&gt;
-                                    &lt;/div&gt;
-                                &lt;/div&gt;
-                                &lt;div class="d-flex float-end" colspan="2" groups="base.group_user" invisible="margin_imple == 0"&gt;
-                                    &lt;label for="margin_imple"/&gt;
-                                    &lt;div&gt;
-                                        &lt;field name="margin_imple" class="oe_inline"/&gt;
-                                        &lt;field name="amount_untaxed" invisible="1"/&gt;
-                                        &lt;span class="oe_inline" invisible="amount_untaxed == 0"&gt;
-                                            (&lt;field name="margin_imple_percent" nolabel="1" class="oe_inline" widget="percentage"/&gt;)
-                                        &lt;/span&gt;
-                                    &lt;/div&gt;
-                                &lt;/div&gt;
-                                &lt;div class="d-flex float-end" colspan="2" groups="base.group_user" invisible="margin_maintenance == 0"&gt;
-                                    &lt;label for="margin_maintenance"/&gt;
-                                    &lt;div&gt;
-                                        &lt;field name="margin_maintenance" class="oe_inline"/&gt;
-                                        &lt;field name="amount_untaxed" invisible="1"/&gt;
-                                        &lt;span class="oe_inline" invisible="amount_untaxed == 0"&gt;
-                                            (&lt;field name="margin_maintenance_percent" nolabel="1" class="oe_inline" widget="percentage"/&gt;)
-                                        &lt;/span&gt;
-                                    &lt;/div&gt;
-                                &lt;/div&gt;
-                                &lt;div class="d-flex float-end" colspan="2" groups="base.group_user" invisible="cost_amount == 0"&gt;
-                                    &lt;label for="cost_amount" string="Total Cost"/&gt;
-                                    &lt;div&gt;
-                                        &lt;field name="cost_amount" class="oe_inline"/&gt;
-                                    &lt;/div&gt;
-                                &lt;/div&gt;
-                                &lt;div class="d-flex float-end" colspan="2" groups="base.group_user"&gt;
-                                    &lt;label for="margin" string="Total Margin"/&gt;
-                                    &lt;div&gt;
-                                        &lt;field name="margin" class="oe_inline"/&gt;
-                                        &lt;field name="amount_untaxed" invisible="1"/&gt;
-                                        &lt;span class="oe_inline" invisible="amount_untaxed == 0"&gt;
-                                            (&lt;field name="margin_percent" nolabel="1" class="oe_inline" widget="percentage"/&gt;)
-                                        &lt;/span&gt;
-                                    &lt;/div&gt;
-                                &lt;/div&gt;
-                            &lt;/xpath&gt;
-                        &lt;/field&gt;
-                    &lt;/record&gt;
-                
-                    &lt;record id="sale_margin_sale_order_line_form_inherit" model="ir.ui.view"&gt;
-                        &lt;field name="name"&gt;sale_margin_sale_order_line_form_inherit&lt;/field&gt;
-                        &lt;field name="model"&gt;sale.order&lt;/field&gt;
-                        &lt;field name="inherit_id" ref="sale_margin.sale_margin_sale_order_line_form"/&gt;
-                        &lt;field name="arch" type="xml"&gt;
-                            &lt;xpath expr="//field[@name='order_line']/list//field[@name='purchase_price']" position="attributes"&gt;
-                                &lt;attribute name="optional"&gt;show&lt;/attribute&gt;
-                            &lt;/xpath&gt;
-                            &lt;xpath expr="//field[@name='order_line']/list//field[@name='product_uom_qty']" position="before"&gt;
-                                &lt;field name="name_description"/&gt;
-                                &lt;field name="business_revenue"/&gt;
-                            &lt;/xpath&gt;
-                        &lt;/field&gt;
-                    &lt;/record&gt;
+&lt;record model="ir.ui.view" id="sale_margin_sale_order_inherit"&gt;
+    &lt;field name="name"&gt;sale.order.margin.view.form&lt;/field&gt;
+    &lt;field name="model"&gt;sale.order&lt;/field&gt;
+    &lt;field name="inherit_id" ref="sale_margin.sale_margin_sale_order"/&gt;
+    &lt;field name="arch" type="xml"&gt;
+
+        &lt;xpath expr="//div[@class='d-flex float-end']" position="replace"&gt;
+            &lt;div class="d-flex float-end" colspan="2" groups="base.group_user" invisible="margin_license == 0"&gt;
+                &lt;label for="margin_license"/&gt;
+                &lt;div&gt;
+                    &lt;field name="margin_license" class="oe_inline"/&gt;
+                    &lt;field name="amount_untaxed" invisible="1"/&gt;
+                    &lt;span class="oe_inline" invisible="amount_untaxed == 0"&gt;
+                        (&lt;field name="margin_license_percent" nolabel="1" class="oe_inline" widget="percentage" /&gt;)
+                    &lt;/span&gt;
+                &lt;/div&gt;
+            &lt;/div&gt;
+            &lt;div class="d-flex float-end" colspan="2" groups="base.group_user" invisible="margin_imple == 0"&gt;
+                &lt;label for="margin_imple"/&gt;
+                &lt;div&gt;
+                    &lt;field name="margin_imple" class="oe_inline"/&gt;
+                    &lt;field name="amount_untaxed" invisible="1"/&gt;
+                    &lt;span class="oe_inline" invisible="amount_untaxed == 0"&gt;
+                        (&lt;field name="margin_imple_percent" nolabel="1" class="oe_inline" widget="percentage"/&gt;)
+                    &lt;/span&gt;
+                &lt;/div&gt;
+            &lt;/div&gt;
+            &lt;div class="d-flex float-end" colspan="2" groups="base.group_user" invisible="margin_maintenance == 0"&gt;
+                &lt;label for="margin_maintenance"/&gt;
+                &lt;div&gt;
+                    &lt;field name="margin_maintenance" class="oe_inline"/&gt;
+                    &lt;field name="amount_untaxed" invisible="1"/&gt;
+                    &lt;span class="oe_inline" invisible="amount_untaxed == 0"&gt;
+                        (&lt;field name="margin_maintenance_percent" nolabel="1" class="oe_inline" widget="percentage"/&gt;)
+                    &lt;/span&gt;
+                &lt;/div&gt;
+            &lt;/div&gt;
+            &lt;div class="d-flex float-end" colspan="2" groups="base.group_user" invisible="cost_amount == 0"&gt;
+                &lt;label for="cost_amount" string="Total Cost"/&gt;
+                &lt;div&gt;
+                    &lt;field name="cost_amount" class="oe_inline"/&gt;
+                &lt;/div&gt;
+            &lt;/div&gt;
+            &lt;div class="d-flex float-end" colspan="2" groups="base.group_user"&gt;
+                &lt;label for="margin" string="Total Margin"/&gt;
+                &lt;div&gt;
+                    &lt;field name="margin" class="oe_inline"/&gt;
+                    &lt;field name="amount_untaxed" invisible="1"/&gt;
+                    &lt;span class="oe_inline" invisible="amount_untaxed == 0"&gt;
+                        (&lt;field name="margin_percent" nolabel="1" class="oe_inline" widget="percentage"/&gt;)
+                    &lt;/span&gt;
+                &lt;/div&gt;
+            &lt;/div&gt;
+        &lt;/xpath&gt;
+    &lt;/field&gt;
+&lt;/record&gt;
+
+&lt;record id="sale_margin_sale_order_line_form_inherit" model="ir.ui.view"&gt;
+    &lt;field name="name"&gt;sale_margin_sale_order_line_form_inherit&lt;/field&gt;
+    &lt;field name="model"&gt;sale.order&lt;/field&gt;
+    &lt;field name="inherit_id" ref="sale_margin.sale_margin_sale_order_line_form"/&gt;
+    &lt;field name="arch" type="xml"&gt;
+        &lt;xpath expr="//field[@name='order_line']/list//field[@name='purchase_price']" position="attributes"&gt;
+            &lt;attribute name="optional"&gt;show&lt;/attribute&gt;
+        &lt;/xpath&gt;
+        &lt;xpath expr="//field[@name='order_line']/list//field[@name='product_uom_qty']" position="before"&gt;
+            &lt;field name="name_description"/&gt;
+            &lt;field name="business_revenue"/&gt;
+        &lt;/xpath&gt;
+    &lt;/field&gt;
+&lt;/record&gt;
                 </code>
             </pre>
         </div>
@@ -398,11 +343,210 @@
             <li>Laporan keuangan menggunakan Accounting Reports</li>
         </ul>
         <button class="button toggle-btn" onclick="toggleCode('code3')">
-            Lihat Highlight Python
+            Lihat Python
         </button>
         <button class="button toggle-btn" onclick="toggleCode('code4')">
-            Lihat Highlight Xml
+            Lihat Xml
         </button>
+
+        <div id="code3" class="code-box">
+            <pre>
+                <code class="language-python">
+class RevaluasiKurs(models.TransientModel):
+    _name = 'revaluasi.kurs'
+    _inherit = ['mail.thread', 'mail.activity.mixin']
+    _description = 'Revaluasi Kurs'
+
+    ref = fields.Char(string="Reference")  
+    label = fields.Char(string="Label")
+    date = fields.Date('Date', default=fields.Date.context_today, required=True,)
+    journal_id = fields.Many2one('account.journal', string='Journal', required=True)
+
+    def _defaultAccount(self):
+        dtAcc = self.env['account.account'].search([('user_type_id.name','in',MAP_ACCOUNT_REVAL)])
+        return dtAcc.ids
+    account_ids = fields.Many2many('account.account', string='Account', domain=[('user_type_id.name', 'in', MAP_ACCOUNT_REVAL)], default=False)
+    
+    def _defaultCurrency(self):
+        line_curr = []
+        dt = self.env['res.currency'].search([('active','=',True),('id','!=',self.env.company.currency_id.id)])
+        dtAcc = self.env['account.account'].search([('user_type_id.name','in',MAP_ACCOUNT_REVAL)])
+        if dt:
+            for i in dt:
+                tmp = [0,0,{
+                    'currency_id': i.id,
+                    'rate_kurs': self.env['res.currency.rate'].search([('currency_id','=',i.id),('name','=',datetime.date.today())]).inverse_company_rate or 0
+                }]
+                line_curr.append(tmp)
+        return line_curr
+    revaluasi_line = fields.One2many('revaluasi.kurs.line','revaluasi_id', string="Lines", ondelete='cascade', copy=True, tracking=True, default=_defaultCurrency)
+    
+    @api.onchange('date')
+    def _onchange_date(self):
+        for i in self.revaluasi_line:
+            i._onchange_kurs()
+    
+    def action_confirm(self):
+        result = []
+        # SET TGL AWAL DAN TGL AKHIR
+        tgl_awal_bln = datetime.datetime(self.date.year, self.date.month, 1)
+        day_of_month = calendar.monthrange(self.date.year, self.date.month)[1]
+        tgl_akhir_bln = datetime.datetime(self.date.year, self.date.month, day_of_month)
+
+        for i in self.revaluasi_line:
+            curr = self.env['res.currency.rate'].search([('name','=',self.date),('currency_id','=',i.currency_id.id)])
+            if curr:
+                curr.write({'inverse_company_rate': i.rate_kurs})
+            else:
+                curr.create({
+                    'currency_id': i.currency_id.id,
+                    'inverse_company_rate': i.rate_kurs,
+                    'name': self.date,
+                })
+            move_line = self.env['account.move.line'].search([
+                '&', 
+                ('date', '<=', tgl_akhir_bln), 
+                ('account_id', 'not in', [i.realized_account_id.id, i.unrealized_account_id.id]),
+                ('account_id.user_type_id.name','in',MAP_ACCOUNT_REVAL),
+                ('account_id','in',self.account_ids.ids),
+                ('amount_currency', '!=', False),('amount_currency', '!=', 0),
+                ('currency_id','=', i.currency_id.id), 
+                ('parent_state','=','posted'),
+            ])
+            map_coa = move_line.mapped('account_id')
+            line_ids_det = []
+            for i2 in map_coa:
+                # SALDO
+                line_saldo = self.env['account.move.line'].search([
+                    '&',
+                    ('date', '<=', tgl_akhir_bln), 
+                    ('account_id', '=', i2.id),
+                    ('currency_id', '=', i.currency_id.id),
+                    ('amount_currency', '!=', False), ('amount_currency', '!=', 0),
+                    ('parent_state', '=', 'posted'),
+                ])
+
+                # parsing SALDO
+                debit_saldo = sum(line_saldo.mapped('debit'))
+                credit_saldo = sum(line_saldo.mapped('credit'))
+                amount_curr_saldo = sum(line_saldo.mapped('amount_currency'))
+
+                balance = debit_saldo - credit_saldo
+                balance_rate = i.currency_id._convert(amount_curr_saldo, self.env.company.currency_id, self.env.company, tgl_akhir_bln)
+                balance_value = balance - balance_rate
+
+                if balance_value != 0 and balance != 0:
+                    move_line_current_month = self.env['account.move.line'].search([
+                        '&',
+                        ('date', '>=', tgl_awal_bln), ('date', '<=', tgl_akhir_bln), 
+                        ('account_id.user_type_id.name','in',MAP_ACCOUNT_REVAL),
+                        ('account_id','=',i2.id),
+                        ('amount_currency', '!=', False),('amount_currency', '!=', 0),
+                        ('currency_id','=', i.currency_id.id), 
+                        ('parent_state','=','posted'),
+                        ('partner_id','!=',False)
+                    ])
+                    acc_res = 0
+                    # jika pada bulan tersebut ada transaksi, maka masuk ke akun realized
+                    # jika pada bulan tersebut tidak ada transaksi, maka masuk ke akun unrealized
+                    if len(move_line_current_month) > 0:
+                        acc_res = i.realized_account_id.id
+                    else:
+                        acc_res = i.unrealized_account_id.id
+
+                    # VALUE AFTER SELISIH RATE
+                    det = {
+                        'name': str(self.label) + ' ' + str(i.currency_id.name) + ' ' + tgl_akhir_bln.strftime('%B'),
+                        'debit': balance_value < 0.0 and -balance_value or 0.0,
+                        'credit': balance_value > 0.0 and balance_value or 0.0,
+                        'date_maturity': tgl_akhir_bln.strftime('%Y-%m-%d'),
+                        'account_id': i2.id,
+                        'currency_id': i.currency_id.id, #self.env.company.currency_id.id,
+                        'amount_currency': 0,
+                    }
+                    line_ids_det.append((0,0,det))
+
+                    det = {
+                        'name': str(self.label) + ' ' + str(i.currency_id.name) + ' ' + tgl_akhir_bln.strftime('%B'),
+                        'debit': balance_value > 0.0 and balance_value or 0.0,
+                        'credit': balance_value < 0.0 and -balance_value or 0.0,
+                        'date_maturity': tgl_akhir_bln.strftime('%Y-%m-%d'),
+                        'account_id': acc_res,
+                        'currency_id': i.currency_id.id, #self.env.company.currency_id.id,
+                        'amount_currency': 0,
+                    }
+                    line_ids_det.append((0,0,det))
+
+            all_move_vals = {
+                'date': tgl_akhir_bln.strftime('%Y-%m-%d'),
+                'ref': str(self.ref) + ' ' + str(i.currency_id.name),
+                'journal_id': self.journal_id.id,
+                'line_ids': line_ids_det
+            }
+
+            # create account move
+            if line_ids_det != []:
+                am = self.env['account.move'].with_context(default_type='entry')
+                moves = am.create(all_move_vals)
+                result.append(moves.id)
+
+        # =============================================
+        # if result:
+        open_form = {
+            'name': _("Journal Revaluasi Kurs"),
+            'type': 'ir.actions.act_window',
+            'res_model': 'account.move',
+            'view_mode': 'tree,form',
+            # 'res_id': result,
+            'domain': [('id', 'in', result)],
+            'context': {'create': False},
+        }
+        return open_form
+                </code>
+            </pre>
+        </div>
+
+        <div id="code4" class="code-box">
+            <pre>
+                <code class="language-markup">
+&lt;record id="revaluasi_kurs_form_wizard" model="ir.ui.view"&gt;
+    &lt;field name="model"&gt;revaluasi.kurs&lt;/field&gt;
+    &lt;field name="arch" type="xml"&gt;
+        &lt;form&gt;
+            &lt;sheet&gt;
+                &lt;group&gt;
+                    &lt;field name="ref"/&gt;
+                    &lt;field name="label"/&gt;
+                    &lt;field name="date"/&gt;
+                    &lt;field name="journal_id"/&gt;
+                &lt;/group&gt;
+
+                &lt;notebook&gt;
+                    &lt;page string="Currency and Account"&gt;
+                        &lt;field name="revaluasi_line"&gt;
+                            &lt;tree editable="bottom"&gt;
+                                &lt;field name="currency_id"/&gt;
+                                &lt;field name="rate_kurs"/&gt;
+                                &lt;field name="realized_account_id"/&gt;
+                                &lt;field name="unrealized_account_id"/&gt;
+                            &lt;/tree&gt;
+                        &lt;/field&gt;
+                    &lt;/page&gt;
+                &lt;/notebook&gt;
+            &lt;/sheet&gt;
+
+            &lt;footer&gt;
+                &lt;button string="Save and View Journal"
+                        name="action_confirm"
+                        type="object"
+                        class="btn-primary"/&gt;
+            &lt;/footer&gt;
+        &lt;/form&gt;
+    &lt;/field&gt;
+&lt;/record&gt;
+                </code>
+            </pre>
+        </div>
     </div>
 
     <div class="card">
@@ -418,11 +562,233 @@
             <li>Laporan keuangan menggunakan Accounting Reports</li>
         </ul>
         <button class="button toggle-btn" onclick="toggleCode('code5')">
-            Lihat Highlight Python
+            Lihat Python
         </button>
         <button class="button toggle-btn" onclick="toggleCode('code6')">
-            Lihat Highlight Xml
+            Lihat Xml
         </button>
+
+        <div id="code5" class="code-box">
+            <pre>
+                <code class="language-python">
+class addColumbariumWizard(models.TransientModel):
+    _name = 'add.columbarium.wizard'
+    
+    sale_order_id = fields.Many2one('sale.order', string='Sale Order', required=True)
+    currency_id = fields.Many2one(related="sale_order_id.currency_id")
+    
+    def default_pickup_date(self):
+        # Ambil waktu lokal user
+        user_today = fields.Datetime.context_timestamp(self, datetime.now()).date()
+        dt = datetime.combine(user_today, time(hour=0, minute=5))
+        # Kurangi 7 jam (backdate)
+        return dt - timedelta(hours=7)
+
+    def default_return_date_others(self):
+        local_target_time = datetime.combine(
+            datetime.now().date() + relativedelta(years=1, days=-1),
+            time(hour=12, minute=5)
+        )
+        return local_target_time - timedelta(hours=7)
+
+    def _get_product_columbarium_id_domain(self):
+        columbarium_category_id = self.env.ref('custom_sale_order.categ_columbarium')
+        return [('categ_id','=',columbarium_category_id.id)]
+    
+    product_columbarium_id = fields.Many2one('product.product', string='Columbarium',domain=_get_product_columbarium_id_domain)
+    pickup_date = fields.Datetime(string="Tanggal Pickup",  default=default_pickup_date)
+    return_date = fields.Datetime(string="Tanggal Return", compute='_compute_return_date', store=True)
+    pickup_date_others = fields.Datetime(string="Tanggal Pickup",default=default_pickup_date)
+    return_date_others = fields.Datetime(string="Tanggal Return", default=default_return_date_others,required=True)
+    list_price = fields.Float(compute='_compute_list_price', string='Subtotal')
+    duration = fields.Selection([
+        ('1m', '1 Bulan'),
+        ('3m', '3 Bulan'),
+        ('6m', '6 Bulan'),
+        ('1y', '1 Tahun'),
+        ('5y', '5 Tahun'),
+        ('10y', '10 Tahun')
+    ], string='Durasi')
+    use_other_date = fields.Boolean(string="Tanggal Lainnya")
+    return_date = fields.Datetime(string="Tanggal Return", compute='_compute_return_date', store=True)
+    
+    # new field for status rental detail
+    rental_status = fields.Selection([
+        ('not_available', 'Not Available'),
+        ('free', 'Available'),
+        ('reserve', 'Reserved'),
+        ('occupied', 'Occupied'),
+    ], compute='_compute_rental_status', string='Status Rental')
+    rental_status_detail = fields.Char(compute='_compute_rental_status', string='Status Rental Detail')
+    @api.depends('product_columbarium_id','pickup_date','return_date','pickup_date_others','return_date_others','use_other_date')
+    def _compute_rental_status(self):
+        for record in self:
+            record.rental_status = None
+            record.rental_status_detail = None
+            if record.product_columbarium_id and (record.pickup_date and record.return_date) or \
+                (record.pickup_date_others and record.return_date_others):
+                rental_status_json = record.product_columbarium_id.product_tmpl_id.get_rental_status_info(
+                    product_id = record.product_columbarium_id,
+                    start_date = record.pickup_date if not record.use_other_date else record.pickup_date_others,
+                    end_date = record.return_date if not record.use_other_date else record.return_date_others,
+                )
+                if rental_status_json:
+                    record.rental_status = rental_status_json.get('status')
+                    record.rental_status_detail = "{status} {detail}".format(
+                        status= dict(self._fields['rental_status'].selection).get(record.rental_status),
+                        detail= rental_status_json.get('detail') if rental_status_json.get('detail') else ""
+                    )
+
+    @api.depends('pickup_date', 'duration')
+    def _compute_return_date(self):
+        user_tz = self.env.user.tz or 'UTC'
+        local_tz = pytz.timezone(user_tz)
+        utc_tz = pytz.utc
+
+        for record in self:
+            if record.pickup_date and record.duration:
+                local_pickup_datetime = pytz.utc.localize(record.pickup_date).astimezone(local_tz)
+                start_date_local = local_pickup_datetime.date() 
+
+                calculated_date_local = False
+                if 'm' in record.duration:
+                    months = int(record.duration.replace('m', ''))
+                    calculated_date_local = start_date_local + relativedelta(months=months) - timedelta(days=1)
+                elif 'y' in record.duration:
+                    years = int(record.duration.replace('y', ''))
+                    calculated_date_local = start_date_local + relativedelta(years=years) - timedelta(days=1)
+                
+                if calculated_date_local:
+                    return_datetime_local = local_tz.localize(datetime(
+                        calculated_date_local.year,
+                        calculated_date_local.month,
+                        calculated_date_local.day,
+                        12, 5, 0
+                    ))
+                    record.return_date = return_datetime_local.astimezone(utc_tz).replace(tzinfo=None)
+                else:
+                    record.return_date = False
+            else:
+                record.return_date = False
+
+    @api.depends('product_columbarium_id', 'pickup_date', 'return_date', 'pickup_date_others', 'return_date_others', 'use_other_date')
+    def _compute_list_price(self):
+        for record in self:
+            record.list_price = 0
+
+            if record.use_other_date:
+                start_date = record.pickup_date_others
+                end_date = record.return_date_others
+            else:
+                start_date = record.pickup_date
+                end_date = record.return_date
+
+            if record.product_columbarium_id and start_date and end_date:
+                record.list_price = record.product_columbarium_id.product_tmpl_id.get_rental_list_price(
+                    product_id=record.product_columbarium_id,
+                    start_date=start_date,
+                    end_date=end_date + timedelta(days=1),
+                )
+
+    def action_add(self):
+        for record in self:
+            err_msg = ""
+            if record.rental_status == 'occupied': 
+                err_msg = "Ruang Columbarium tersebut telah disewa."
+                err_msg = err_msg[:-1]
+                err_msg += "\n{} ".format(record.rental_status_detail)
+            elif record.rental_status == 'reserve': 
+                err_msg = "Ruang Columbarium tersebut sudah dibooking."
+                err_msg = err_msg[:-1]
+                err_msg += "\n{} ".format(record.rental_status_detail)
+            elif record.rental_status == 'not_available': 
+                err_msg = "Ruang Columbarium tidak tersedia!"
+
+            if err_msg:
+                raise ValidationError(err_msg)
+            
+            if record.use_other_date:
+                pickup_date = record.pickup_date_others
+                return_date = record.return_date_others
+            else:
+                pickup_date = record.pickup_date
+                return_date = record.return_date
+            
+            record.sale_order_id.start_period = pickup_date
+
+            record.sale_order_id.is_rental_order = True if not record.sale_order_id.is_rental_order else record.sale_order_id.is_rental_order
+            record.sale_order_id.rental_status = 'draft' if not record.sale_order_id.rental_status else record.sale_order_id.rental_status
+            
+            values = {
+                'is_rental': True,
+                'product_id': record.product_columbarium_id.id,
+                'name': 'RENTAL - {product_name}\n{pickup_date} to {return_date}'.format(
+                    product_name = record.product_columbarium_id.display_name,
+                    pickup_date = (pickup_date+timedelta(hours=7)).strftime("%d/%m/%Y %H:%M:%S"),
+                    return_date = (return_date+timedelta(hours=7)).strftime("%d/%m/%Y %H:%M:%S"),
+                ),
+                'product_uom_qty': 1,
+                'price_unit': record.list_price,
+                'tax_id': [tax.id for tax in record.product_columbarium_id.product_tmpl_id.taxes_id],
+                'product_warehouse_id':record.product_columbarium_id.product_tmpl_id.default_stock_warehouse_id.id if not record.product_columbarium_id.product_tmpl_id.is_konsinyasi else int(self.env['ir.config_parameter'].sudo().get_param('custom_sale_order.kons_warehouse_id')),
+                'reservation_begin': pickup_date,
+                'pickup_date': pickup_date,
+                'return_date': return_date,
+            }
+            record.sale_order_id.order_line = [(0,0,values)]
+                </code>
+            </pre>
+        </div>
+
+        <div id="code6" class="code-box">
+            <pre>
+                <code class="language-markup">
+&lt;record id="add_columbarium_wizard_view_form" model="ir.ui.view"&gt;
+    &lt;field name="model"&gt;add.columbarium.wizard&lt;/field&gt;
+    &lt;field name="arch" type="xml"&gt;
+        &lt;form&gt;
+            &lt;group&gt;
+                &lt;field name="sale_order_id" readonly="1"/&gt;
+                &lt;field name="product_columbarium_id"
+                       options="{'no_create': True}"/&gt;
+
+                &lt;field name="rental_status"/&gt;
+                &lt;field name="use_other_date"/&gt;
+
+                &lt;!-- Standard Duration --&gt;
+                &lt;field name="duration"
+                       attrs="{'invisible': [('use_other_date','=',True)]}"/&gt;
+
+                &lt;!-- Rental Period --&gt;
+                &lt;field name="pickup_date"
+                       attrs="{'invisible': [('use_other_date','=',True)]}"/&gt;
+
+                &lt;field name="return_date"
+                       attrs="{'invisible': [('use_other_date','=',True)]}"/&gt;
+
+                &lt;!-- Custom Date Range --&gt;
+                &lt;field name="pickup_date_others"
+                       widget="daterange"
+                       attrs="{'invisible': [('use_other_date','=',False)]}"/&gt;
+                &lt;field name="return_date_others"
+                       widget="daterange"
+                       attrs="{'invisible': [('use_other_date','=',False)]}"/&gt;
+                &lt;field name="list_price" widget="monetary"/&gt;
+
+            &lt;/group&gt;
+
+            &lt;footer&gt;
+                &lt;button name="action_add"
+                        type="object"
+                        string="Konfirmasi"
+                        class="btn-primary"/&gt;
+            &lt;/footer&gt;
+        &lt;/form&gt;
+    &lt;/field&gt;
+&lt;/record&gt;
+                </code>
+            </pre>
+        </div>
     </div>
 </div>
 
