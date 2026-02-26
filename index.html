@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Henrawan Muhlisin | ERP Solution Engineer</title>
+    <title>Henrawan Muhlisin</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body {
@@ -38,6 +38,20 @@
             text-align: center;
             padding: 20px;
         }
+        .button {
+            display: inline-block;
+            margin-top: 10px;
+            margin-right: 10px;
+            padding: 8px 15px;
+            background: #0077b6;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .button:hover {
+            background: #023e8a;
+        }
     </style>
 </head>
 
@@ -45,15 +59,15 @@
 
 <div class="hero">
     <h1>Henrawan Muhlisin</h1>
-    <p>ERP Solution Engineer | Spesialis Odoo</p>
+    <p>Odoo Developer</p>
 </div>
 
 <div class="section">
     <h2>Tentang Saya</h2>
     <p>
-        Saya adalah seorang ERP Solution Engineer dengan pengalaman dalam pengembangan Odoo sejak tahun 2018.
+        Saya adalah seorang Odoo Developer dengan pengalaman dalam pengembangan Odoo sejak tahun 2018.
         Perjalanan saya dimulai dari implementasi dan pengembangan pada Odoo versi 13, kemudian berlanjut ke
-        versi 15, 17, hingga saat ini aktif mengembangkan solusi berbasis Odoo versi 18.
+        versi 15, 17, hingga saat ini aktif mengembangkan Odoo versi 18.
     </p>
 
     <p>
@@ -63,8 +77,8 @@
     </p>
 
     <p>
-        Mulai dari pengembangan modul kustom, portal self-service karyawan, laporan keuangan khusus,
-        hingga otomatisasi proses kerja, setiap solusi yang saya bangun bertujuan untuk meningkatkan
+        Mulai dari pengembangan modul kustom, portal self-service karyawan hingga laporan keuangan khusus, 
+        setiap solusi yang saya bangun bertujuan untuk meningkatkan
         efisiensi, transparansi, dan skalabilitas operasional perusahaan.
     </p>
 
@@ -78,83 +92,58 @@
     <h2>Proyek Unggulan & Highlight Teknis</h2>
 
     <div class="card">
-        <h3>Portal Attendance Karyawan</h3>
+        <h3>PT. Dwidasa Samsara Indonesia</h3>
         <p>
-            Mengembangkan sistem absensi berbasis portal agar karyawan dapat melakukan check-in
-            dan check-out secara mandiri tanpa intervensi HR.
+            Mengembangkan sistem operasional pada internal perusahaan dimulai dari CRM, Sales, 
+            Accounting hingga Portal Absensi Karyawan.
         </p>
-        <b>Highlight Teknis:</b>
+        <b>Highlight Feature dan Teknis:</b>
         <ul>
+            <li>Sistem margin project berdasarkan nilai jual dan cost yang dibutuhkan</li>
+            <li>Laporan akuntansi menggunakan report handler</li>
             <li>Pengembangan Portal Controller</li>
-            <li>Custom Filtering berdasarkan Employee Login</li>
-            <li>Integrasi dengan model hr.attendance</li>
-            <li>Validasi akses berbasis user</li>
         </ul>
+        <a class="button" href="LINK_GITHUB_ATTENDANCE" target="_blank">Lihat Code</a>
+        <a class="button" href="LINK_DEMO_ATTENDANCE" target="_blank">Lihat Project</a>
     </div>
 
     <div class="card">
-        <h3>Portal Pengajuan Cuti (Time Off)</h3>
+        <h3>PT. Fortress Data Service</h3>
         <p>
-            Membangun sistem pengajuan cuti berbasis portal yang menampilkan informasi
-            sisa alokasi cuti secara real-time.
+            Membangun sistem management proyek dimulai dari opportunity, 
+            perhitungan margin revenue terhadap cost project secara recurring, 
+            manage project task, notifikasi invoice dan laporan keuangan.
         </p>
-        <b>Highlight Teknis:</b>
+        <b>Highlight Feature dan Teknis:</b>
         <ul>
-            <li>Integrasi hr.leave & hr.leave.allocation</li>
-            <li>Menampilkan saldo cuti pada portal</li>
-            <li>Form pengajuan cuti via portal</li>
-            <li>Validasi berdasarkan kebijakan alokasi</li>
+            <li>Single form yang terintegrasi antara CRM, Sales, Purchase, Project dan Invoicing</li>
+            <li>Proses approval lengkap hingga direksi</li>
+            <li>Laporan keuangan menggunakan Accounting Reports</li>
         </ul>
+        <a class="button" href="LINK_GITHUB_ATTENDANCE" target="_blank">Lihat Code</a>
+        <a class="button" href="LINK_DEMO_ATTENDANCE" target="_blank">Lihat Project</a>
     </div>
 
     <div class="card">
-        <h3>Custom Accounting Report - Profitabilitas Karyawan</h3>
+        <h3>Rumah Duka Carolus</h3>
         <p>
-            Mengembangkan laporan keuangan kustom untuk menganalisa kontribusi revenue
-            berdasarkan Project Manager.
+            Digitalisasi proses rental columbarium, proses kremasi dan rental ruang semayam.
         </p>
-        <b>Highlight Teknis:</b>
+        <b>Highlight Feature dan Teknis:</b>
         <ul>
-            <li>Custom handler pada account.report</li>
-            <li>Grouping invoice berdasarkan employee_pm_id</li>
-            <li>Data tidak langsung dari account.move.line</li>
-            <li>Custom logic aggregation</li>
+            <li>Kustomisasi form biodata jenazah beserta penanggung jawab secara rinci</li>
+            <li>Penjualan paket semayam beserta columbarium yang otomatis terintegrasi dengan proses amortisasi</li>
+            <li>Proses upgrade paket layanan semayam hingga kremasi</li>
+            <li>Laporan keuangan menggunakan Accounting Reports</li>
         </ul>
+        <a class="button" href="LINK_GITHUB_ATTENDANCE" target="_blank">Lihat Code</a>
+        <a class="button" href="LINK_DEMO_ATTENDANCE" target="_blank">Lihat Project</a>
     </div>
-
-    <div class="card">
-        <h3>Helpdesk Portal Extension</h3>
-        <p>
-            Mengembangkan fitur agar pengguna portal dapat membuat tiket support secara mandiri.
-        </p>
-        <b>Highlight Teknis:</b>
-        <ul>
-            <li>Portal ticket creation</li>
-            <li>Custom controller</li>
-            <li>Integrasi helpdesk.ticket</li>
-            <li>Akses berbasis user portal</li>
-        </ul>
-    </div>
-
-    <div class="card">
-        <h3>OWL Custom UI (Modern Odoo Frontend)</h3>
-        <p>
-            Menerapkan OWL untuk membangun antarmuka modern yang lebih interaktif
-            dibandingkan tampilan QWeb standar.
-        </p>
-        <b>Highlight Teknis:</b>
-        <ul>
-            <li>OWL Component</li>
-            <li>Custom frontend logic</li>
-            <li>Integrasi dengan backend Odoo</li>
-        </ul>
-    </div>
-
 </div>
 
 <div class="section">
     <h2>Tech Stack</h2>
-    <p>Odoo 15 / 17 / 18 | Python | PostgreSQL | OWL | QWeb</p>
+    <p>Odoo 15 / 17 / 18 | Python | PostgreSQL | OWL | QWeb | Odoo SH </p>
 </div>
 
 <div class="footer">
