@@ -52,6 +52,18 @@
         .button:hover {
             background: #023e8a;
         }
+        .code-box {
+            display: none;
+            margin-top: 15px;
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        
+        .toggle-btn {
+            cursor: pointer;
+        }
     </style>
 </head>
 
@@ -103,8 +115,29 @@
             <li>Laporan akuntansi menggunakan report handler</li>
             <li>Pengembangan Portal Controller</li>
         </ul>
-        <a class="button" href="LINK_GITHUB_ATTENDANCE" target="_blank">Lihat Code</a>
-        <a class="button" href="LINK_DEMO_ATTENDANCE" target="_blank">Lihat Project</a>
+        <button class="button toggle-btn" onclick="toggleCode('code1')">
+            Lihat Highlight Code
+        </button>
+    
+        <div id="code1" class="code-box">
+            <pre>
+                <code class="language-python">
+                class PortalAttendance(CustomerPortal):
+                
+                    @http.route(['/my/attendance'], type='http', auth="user", website=True)
+                    def portal_my_attendance(self):
+                        employee = request.env.user.employee_id
+                
+                        attendances = request.env['hr.attendance'].search([
+                            ('employee_id', '=', employee.id)
+                        ])
+                
+                        return request.render("module.portal_my_attendance", {
+                            'attendances': attendances
+                        })
+                </code>
+            </pre>
+        </div>
     </div>
 
     <div class="card">
@@ -120,7 +153,7 @@
             <li>Proses approval lengkap hingga direksi</li>
             <li>Laporan keuangan menggunakan Accounting Reports</li>
         </ul>
-        <a class="button" href="LINK_GITHUB_ATTENDANCE" target="_blank">Lihat Code</a>
+        <a class="button" href="LINK_GITHUB_ATTENDANCE" target="_blank">Lihat Highlight Code</a>
         <a class="button" href="LINK_DEMO_ATTENDANCE" target="_blank">Lihat Project</a>
     </div>
 
@@ -136,7 +169,7 @@
             <li>Proses upgrade paket layanan semayam hingga kremasi</li>
             <li>Laporan keuangan menggunakan Accounting Reports</li>
         </ul>
-        <a class="button" href="LINK_GITHUB_ATTENDANCE" target="_blank">Lihat Code</a>
+        <a class="button" href="LINK_GITHUB_ATTENDANCE" target="_blank">Lihat Highlight Code</a>
         <a class="button" href="LINK_DEMO_ATTENDANCE" target="_blank">Lihat Project</a>
     </div>
 </div>
@@ -149,6 +182,17 @@
 <div class="footer">
     © 2026 Henrawan Muhlisin
 </div>
+
+<script>
+function toggleCode(id) {
+    var el = document.getElementById(id);
+    if (el.style.display === "none") {
+        el.style.display = "block";
+    } else {
+        el.style.display = "none";
+    }
+}
+</script>
 
 </body>
 </html>
