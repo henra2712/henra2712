@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" rel="stylesheet" />
     <title>Henrawan Muhlisin</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
@@ -57,19 +58,25 @@
             overflow-x: auto;
             overflow-y: hidden;
             transition: max-height 0.4s ease;
-            background: #f4f4f4;
+            background: #1e1e1e;
             padding: 0 15px;
             border-radius: 8px;
+            color: #d4d4d4;
         }
-
+        
         .code-box pre {
-            white-space: pre;
-            overflow-x: auto;
+            background: transparent !important;
             margin: 0;
+            white-space: pre;
         }
 
         .code-box {
             -webkit-overflow-scrolling: touch;
+        }
+
+        .code-box code {
+            font-family: Consolas, Monaco, 'Courier New', monospace;
+            font-size: 14px;
         }
         
         .toggle-btn {
